@@ -4,14 +4,75 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <stdbool.h>
 
 typedef struct {
     uint8_t data[4][4];
 } block;
 
-int main() {
+void print_help() {
+	puts("help placeholder");
+}
+
+
+int main(int argc, char *argv[]) {
+	int opt;
+	bool verbose = false;
+	bool user_key = false;
+	uint8_t	aes_key[16];
+	while((opt = getopt(argc, argv, "vk:h")) != -1) {
+		switch (opt) {
+			case 'v':
+				puts("unimplimented allways verbose");
+				return 1;
+			case 'k':
+				user_key = true;
+				char *ptr = optarg;
+				for (int i = 0; i < 16; i++) {
+					uint8_t temp_val;
+					int chars_read = 0;
+
+					if (sscanf(ptr, "%hhx%n", &temp_val, &chars_read) != 1) {
+						fprintf(stderr, "Error: -k requires 16 valid hex bytes.\n");
+						return 0;
+					}
+
+					aes_key[i] = temp_val;
+					ptr += chars_read;
+				}
+				break;
+			case 'h':
+				print_help();
+				return 1;
+			default:
+				print_help();
+				return 1;
+		}
+	}
+	//attempt to add error handeling for improper arg usage and h arg.
+	// add else wraper to AES key gen if one is supplyed
+	// add verbose arg just in case they want the blocks to be printed instead of just a file
+	// add file support
+	//generates an AES key from kernel entropy pool if no key is supplyed
+	if (user_key == false) {
+		if (getentropy(aes_key, sizeof(aes_key)) != 0) {
+			perror("getentropy failed");
+			return 1;
+		}
+		printf("AES key: ");
+		for(int i = 0; i < 16; i++) {
+			printf("%02X ", aes_key[i]);
+		}
+		fflush(stdout);
+		putchar('\n');
+	}
+
+	block aes_key[][] = 
+	// grabs text from input
 	char *text = NULL;
 	ssize_t string_length = 0;
+
+	// checks for piped data
 	if (isatty(STDIN_FILENO)) {
 		printf("enter your string: ");
 		fflush(stdout);
@@ -21,6 +82,7 @@ int main() {
 			perror("getline failed");
 			return 1;
 		}
+
 	//rewrite
 	} else {
 		size_t capacity = 4096;
@@ -53,16 +115,17 @@ int main() {
 		text[total_read] = '\0';
 		string_length = total_read;
 	}
+
+	// to be complient with PKCS#7
 	int padding = 16 - (string_length % 16);
-	// to comply with PKCS#7
 	int num_blocks = (string_length/16)+1;
 	block *blocks = malloc(num_blocks * sizeof(block));
 	for (int i = 0; i < num_blocks; i++) {
 		for (int x = 0; x < 16; x++) {
 			if ((i*16)+x < string_length) {
-				blocks[i].data[x/4][x%4] = text[(i*16)+x];
+				blocks[i].data[x%4][x/4] = text[(i*16)+x];
 			} else {
-				blocks[i].data[x/4][x%4] = padding;
+				blocks[i].data[x%4][x/4] = padding;
 			}
 		}
 	}
