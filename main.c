@@ -1,14 +1,4 @@
-#define _GNU_SOURCE
-#include <stdio.h>
-#include <stdint.h>
-#include <string.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <stdbool.h>
-
-typedef struct {
-    uint8_t data[4][4];
-} block;
+#include "main.h"
 
 void print_help() {
 	puts("help placeholder");
@@ -19,12 +9,12 @@ int main(int argc, char *argv[]) {
 	int opt;
 	bool verbose = false;
 	bool user_key = false;
-	uint8_t	aes_key[16];
+	uint8_t	aes_keyl[16];
 	while((opt = getopt(argc, argv, "vk:h")) != -1) {
 		switch (opt) {
 			case 'v':
-				puts("unimplimented allways verbose");
-				return 1;
+				verbose = true;
+				break;
 			case 'k':
 				user_key = true;
 				char *ptr = optarg;
@@ -37,7 +27,7 @@ int main(int argc, char *argv[]) {
 						return 0;
 					}
 
-					aes_key[i] = temp_val;
+					aes_keyl[i] = temp_val;
 					ptr += chars_read;
 				}
 				break;
@@ -55,19 +45,34 @@ int main(int argc, char *argv[]) {
 	// add file support
 	//generates an AES key from kernel entropy pool if no key is supplyed
 	if (user_key == false) {
-		if (getentropy(aes_key, sizeof(aes_key)) != 0) {
+		if (getentropy(aes_keyl, sizeof(aes_keyl)) != 0) {
 			perror("getentropy failed");
 			return 1;
 		}
-		printf("AES key: ");
-		for(int i = 0; i < 16; i++) {
-			printf("%02X ", aes_key[i]);
+		if(verbose==true) {
+			printf("AES key: ");
+			for(int i = 0; i < 16; i++) {
+				printf("%02X ", aes_keyl[i]);
+			}
+			fflush(stdout);
+			putchar('\n');
 		}
-		fflush(stdout);
-		putchar('\n');
 	}
 
-	block aes_key[][] = 
+	block aes_key;
+	for (int x = 0; x < 16; x++) {
+		aes_key.data[x%4][x/4] = aes_keyl[x];
+	}
+	if(verbose==true) {
+	    printf("\n--- AES KEY ---\n");
+        for (int r = 0; r < 4; r++) {
+            for (int c = 0; c < 4; c++) {
+                printf("%02X ", (unsigned char)aes_key.data[r][c]);
+            }
+            printf("\n");
+        }
+
+	}
 	// grabs text from input
 	char *text = NULL;
 	ssize_t string_length = 0;
