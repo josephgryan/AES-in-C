@@ -4,11 +4,15 @@ void sub_bytes() {
     
 
 }
-void shift_rows(Block *blocks,int numblocks) {
+void shift_rows(block *blocks,int num_blocks) {
     for(int i = 0; i < num_blocks; i++) {
-        for(int r = 0; r < 3; r++) {
-            for(int c = 0; c < 3; c++;) {
-                blocks[i].data[r][c] = (blocks[i].data[r][c]+r)%3;
+        for(int r = 0; r < 4; r++) {
+            uint8_t temp[4];
+            for(int c = 0; c < 4; c++) {
+                temp[c] = blocks[i].data[r][(c+r)%3];
+            }
+            for(int c = 0; c < 4; c++) {
+                blocks[i].data[r][c] = temp[c];
             }
         }
     }

@@ -9,8 +9,9 @@ int main(int argc, char *argv[]) {
 	int opt;
 	bool verbose = false;
 	bool user_key = false;
+	bool testing = false;
 	uint8_t	aes_keyl[16];
-	while((opt = getopt(argc, argv, "vk:h")) != -1) {
+	while((opt = getopt(argc, argv, "vtk:h")) != -1) {
 		switch (opt) {
 			case 'v':
 				verbose = true;
@@ -34,6 +35,23 @@ int main(int argc, char *argv[]) {
 			case 'h':
 				print_help();
 				return 1;
+			case 't':
+				testing = true;
+				int num_tests = 2;
+				block *tests = malloc(num_tests*sizeof(block));
+				if (getentropy(tests, num_tests * sizeof(block)) != 0) {
+					perror("getentropy failed");
+					return 1;
+				}
+				for(int i = 0; i < num_tests; i++) {
+					for(int r = 0; r < 4; r++) {
+						for(int c = 0; c < 4; c++) {
+							printf("%02X ", tests[i].data[r][c]);
+						}
+						putchar='\n';
+					}
+				}
+				return 0;
 			default:
 				print_help();
 				return 1;
