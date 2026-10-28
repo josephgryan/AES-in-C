@@ -1,4 +1,5 @@
 #include "main.h"
+#include "aes.h"
 
 void print_help() {
 	puts("help placeholder");
@@ -50,8 +51,18 @@ int main(int argc, char *argv[]) {
 						}
 						putchar('\n');
 					}
+					putchar('\n');
 				}
-				shift_rows(tests, num_tests)
+				shift_rows(tests, num_tests);
+				for(int i = 0; i < num_tests; i++) {
+					for(int r = 0; r < 4; r++) {
+						for(int c = 0; c < 4; c++) {
+							printf("%02X ", tests[i].data[r][c]);
+						}
+						putchar('\n');
+					}
+					putchar('\n');
+				}
 				return 0;
 			default:
 				print_help();

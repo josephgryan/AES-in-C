@@ -9,7 +9,7 @@ void shift_rows(block *blocks,int num_blocks) {
         for(int r = 0; r < 4; r++) {
             uint8_t temp[4];
             for(int c = 0; c < 4; c++) {
-                temp[c] = blocks[i].data[r][(c+r)%3];
+                temp[c] = blocks[i].data[r][(c+r)%4];
             }
             for(int c = 0; c < 4; c++) {
                 blocks[i].data[r][c] = temp[c];
