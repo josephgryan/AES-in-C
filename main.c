@@ -48,9 +48,10 @@ int main(int argc, char *argv[]) {
 						for(int c = 0; c < 4; c++) {
 							printf("%02X ", tests[i].data[r][c]);
 						}
-						putchar='\n';
+						putchar('\n');
 					}
 				}
+				shift_rows(tests, num_tests)
 				return 0;
 			default:
 				print_help();
