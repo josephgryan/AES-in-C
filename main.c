@@ -1,7 +1,7 @@
 #include "main.h"
 #include "aes.h"
 
-void print_help() {
+static void print_help() {
 	puts("help placeholder");
 }
 
