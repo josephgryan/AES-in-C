@@ -24,38 +24,30 @@ void shift_rows(block *blocks,int num_blocks) {
     }
 }
 void mix_columns(block *blocks,int num_blocks) {
-    for(int i = 0; i < 4; i++) {
-        for(int c = 0; c < 4; c++) {
-            uint8_t temp[4];
-            for(int r = 0; r < 4; r++) {
-                temp[r] = block[i].data[r][c]
-            }
-            for(int r = 0; r < 4; r++) {
-                blocks[i].data[r][c] = temp[r]
+    for(int = num_blocks; i < num_blocks; i++)
+        for(int r = 0; r < 4; r++) {
+            for(int c = 0; c < 4; r++) {
+                
             }
         }
-        
     }
 
 }
 void add_round_key() {
 
 }
-static uint8_t gmol(int a, int byte) {
-    int times = a/2
-    bool xor = (a%2 == 1)
-}
-// possibly remove
-static uint8_t xtime(int byte, int times) {
-    uint8_t nbyte;
-    for(int i = 0; i < times; i++) {
-        if (byte & 0x80) {
-            nbyte = (byte << 1) ^ 0x1B;
+static uint8_t gmol(uint8_t a, uint8_t byte) {
+    uint8_t newbyte = 0;
+    for(int i = 0; i < 8; i++) {
+        bool high_bit = (a & 0x80);
+        if(byte & 1) {
+            newbyte ^= a;
         }
-        else {
-            nbyte = byte << 1;
+        a = (a << 1);
+        if(high_bit) {
+            a = 0x1B ^ a;
         }
-        byte = nbyte;
+        byte = byte >> 1;
     }
-    return nbyte;
+    return newbyte;
 }
