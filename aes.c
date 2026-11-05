@@ -10,10 +10,10 @@ static const uint8_t mix_columns_matrix[4][4] = {
 static uint8_t gmol(uint8_t a, uint8_t byte) {
     uint8_t newbyte = 0;
     for(int i = 0; i < 8; i++) {
-        bool high_bit = (a & 0x80);
-        if(byte & 1) {
+        if(0 != (byte & 1)) {
             newbyte ^= a;
         }
+        bool high_bit = (a & 0x80);
         a = (a << 1);
         if(high_bit) {
             a = 0x1B ^ a;
