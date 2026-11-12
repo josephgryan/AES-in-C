@@ -38,41 +38,7 @@ int main(int argc, char *argv[]) {
 				return 1;
 			case 't':
 				testing = true;
-				int num_tests = 2;
-				block *tests = malloc(num_tests*sizeof(block));
-				uint8_t test_weights[4][4] = {
-					{0x63,0x47,0xA2,0xF0},
-					{0xF2,0x0A,0x22,0x5C},
-					{0x01,0x01,0x01,0x01},
-					{0xC6,0xC6,0xC6,0xC6}
-				};
-				uint8_t test_weights2[4][4] = {
-					{0xD4,0xD4,0xD4,0xD5},
-					{0x2D,0x26,0x31,0x4C},
-					{0xD4,0xD4,0xD4,0xD5},
-					{0x2D,0x26,0x31,0x4C}
-				};
-				memcpy(tests[0].data, test_weights, sizeof(test_weights));
-				memcpy(tests[1].data, test_weights2, sizeof(test_weights2));
-				for(int i = 0; i < num_tests; i++) {
-					for(int r = 0; r < 4; r++) {
-						for(int c = 0; c < 4; c++) {
-							printf("%02X ", tests[i].data[r][c]);
-						}
-						putchar('\n');
-					}
-					putchar('\n');
-				}
-				mix_columns(tests, num_tests);
-				for(int i = 0; i < num_tests; i++) {
-					for(int r = 0; r < 4; r++) {
-						for(int c = 0; c < 4; c++) {
-							printf("%02X ", tests[i].data[r][c]);
-						}
-						putchar('\n');
-					}
-					putchar('\n');
-				}
+				
 				return 0;
 			default:
 				print_help();

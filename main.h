@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <stdbool.h>
+#include <sys/random.h>
 
 typedef struct block {
     uint8_t data[4][4];
