@@ -11,4 +11,3 @@
 typedef struct block {
     uint8_t data[4][4];
 } block;
-

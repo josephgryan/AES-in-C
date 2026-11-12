@@ -38,7 +38,10 @@ int main(int argc, char *argv[]) {
 				return 1;
 			case 't':
 				testing = true;
-				
+				block placeholder;
+				int num_placeholder;
+				block placeholderkey;
+				add_round_key(&placeholder, num_placeholder, placeholderkey);
 				return 0;
 			default:
 				print_help();
