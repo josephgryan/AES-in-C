@@ -4,14 +4,18 @@
 static void print_help() {
 	puts("help placeholder");
 }
-
-
+bool detect_endianness() {
+	uint8_t bytes[4] = {0x01, 0x02, 0x03, 0x04};
+    uint32_t value;
+    memcpy(&value, bytes, sizeof value);
+    return (value == 0x01020304);
+}
 int main(int argc, char *argv[]) {
 	int opt;
 	bool verbose = false;
 	bool user_key = false;
 	bool testing = false;
-	uint8_t	aes_keyl[16];
+	uint8_t	aes_key[16];
 	while((opt = getopt(argc, argv, "vtk:h")) != -1) {
 		switch (opt) {
 			case 'v':
@@ -29,7 +33,7 @@ int main(int argc, char *argv[]) {
 						return 0;
 					}
 
-					aes_keyl[i] = temp_val;
+					aes_key[i] = temp_val;
 					ptr += chars_read;
 				}
 				break;
@@ -38,10 +42,14 @@ int main(int argc, char *argv[]) {
 				return 1;
 			case 't':
 				testing = true;
-				block placeholder;
-				int num_placeholder;
-				block placeholderkey;
-				add_round_key(&placeholder, num_placeholder, placeholderkey);
+				uint32_t test32 = 0x11223344;
+				printf("%02X", test32);
+				putchar('\n');
+				uint8_t test8[4];
+				memcpy(test8, &test32, sizeof(uint32_t));
+				for(int i = 0; i < 4; i++){
+					printf("%02X", test8[i]);
+				}
 				return 0;
 			default:
 				print_help();
@@ -54,29 +62,25 @@ int main(int argc, char *argv[]) {
 	// add file support
 	//generates an AES key from kernel entropy pool if no key is supplyed
 	if (user_key == false) {
-		if (getentropy(aes_keyl, sizeof(aes_keyl)) != 0) {
+		if (getentropy(aes_key, sizeof(aes_key)) != 0) {
 			perror("getentropy failed");
 			return 1;
 		}
 		if(verbose==true) {
 			printf("AES key: ");
 			for(int i = 0; i < 16; i++) {
-				printf("%02X ", aes_keyl[i]);
+				printf("%02X ", aes_key[i]);
 			}
 			fflush(stdout);
 			putchar('\n');
 		}
 	}
 
-	block aes_key;
-	for (int x = 0; x < 16; x++) {
-		aes_key.data[x%4][x/4] = aes_keyl[x];
-	}
 	if(verbose==true) {
 	    printf("\n--- AES KEY ---\n");
         for (int r = 0; r < 4; r++) {
             for (int c = 0; c < 4; c++) {
-                printf("%02X ", (unsigned char)aes_key.data[r][c]);
+                printf("%02X ", aes_key[4*r + c]);
             }
             printf("\n");
         }

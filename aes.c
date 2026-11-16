@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <sys/types.h>
 
+
+// setup verbose operations
 static const uint8_t mix_columns_matrix[4][4] = {
     {0x02, 0x03, 0x01, 0x01},
     {0x01, 0x02, 0x03, 0x01},
@@ -11,12 +13,13 @@ static const uint8_t mix_columns_matrix[4][4] = {
     {0x03, 0x01, 0x01, 0x02}
 };
 static const uint8_t inverse_mix_columns_matrix[4][4] = {
-    {0x0D, 0x0A, 0x0C, 0x09},
-    {0x09, 0x0D, 0x0A, 0x0C},
-    {0x0C, 0x09, 0x0D, 0x0A},
-    {0x0A, 0x0C, 0x09, 0x0D}
+    {0x0E, 0x0B, 0x0D, 0x09},
+    {0x09, 0x0E, 0x0B, 0x0D},
+    {0x0D, 0x09, 0x0E, 0x0B},
+    {0x0B, 0x0D, 0x09, 0x0E}
 };
-static const uint32_t round_constants[10] = {
+static const uint32_t round_constants[11] = {
+    0x00000000,
     0x01000000,
     0x02000000,
     0x04000000,
@@ -62,18 +65,23 @@ static uint8_t gmol(uint8_t a, uint8_t byte) {
     return newbyte;
 }
 static uint8_t sbox(uint8_t a) {
-return a;
+    return sbox_matrix[a >> 4][a & 0x0F];
 }
-void sub_bytes() {
-    
-
+void sub_bytes(block *blocks,int num_blocks) {
+    for(int i = 0; i < num_blocks; i++){
+        for(int r = 0; r < 4; r++) {
+            for(int c = 0; c < 4; c++) {
+                blocks[i].data[r][c] = sbox(blocks[i].data[r][c]);
+            }
+        }
+    }
 }
 void shift_rows(block *blocks,int num_blocks) {
     for(int i = 0; i < num_blocks; i++) {
         for(int r = 0; r < 4; r++) {
             uint8_t temp[4];
             for(int c = 0; c < 4; c++) {
-                temp[c] = blocks[i].data[c][(c+c)%4];
+                temp[c] = blocks[i].data[r][(c+r)%4];
             }
             for(int c = 0; c < 4; c++) {
                 blocks[i].data[r][c] = temp[c];
@@ -127,29 +135,42 @@ static uint32_t rot_word(uint32_t word) {
     return((word << 8) | (word >> 24));
 }
 
-static void key_expansion(uint32_t *words) {
+void key_expansion(uint8_t key[], block *keys) {
+    uint32_t words[44];
+    memcpy(words, key, sizeof(block));
+    for(int i = 0; i < 4; i++){
+        words[i] = __builtin_bswap32(words[i]);
+    }
     for(int i = 4; i < 44; i++) {
         uint32_t temp = words[i-1];
         if(i%4==0){
             temp = sub_word(rot_word(temp))^round_constants[i/4];
         }
-        else if((4 > 6) & (i%11==4)) {
-            temp = sub_word(temp);
-        }
         words[i]=words[i-4]^temp;
     }
+    if (!detect_endianness()) {
+        for(int i = 0; i < 44; i++){
+            words[i] = __builtin_bswap32(words[i]);
+        }
+    }
+    memcpy(keys, words, sizeof(block)*11);
 }
-void add_round_key(block *blocks,int num_blocks, block key) {  
-    uint32_t words[44];
-    memcpy(words, &key, sizeof(block));
-    key_expansion(words);
-    for(int i = 0; i < num_blocks; i++){
-        uint32_t blockwords[4];
-        memcpy(blockwords, &blocks[i].data, sizeof(block));
-        for(int r = 0; c < 11; c++)
-            for(int c = 0; c < num_blocks; c++) {
-                blockwords[c] = blockwords[c]^words[r*4+c]
+void add_round_key(block *blocks, int num_blocks, block *keys, int round) {
+    for (int i = 0; i < num_blocks; i++) {
+        for (int c = 0; c < 4; c++) {
+            uint32_t state = 0, key = 0;
+
+            for (int r = 0; r < 4; r++) {
+                state = (state << 8) | blocks[i].data[r][c];
+                key   = (key << 8)   | keys[round].data[r][c];
             }
-        
+
+            state ^= key;
+
+            for (int r = 3; r >= 0; r--) {
+                blocks[i].data[r][c] = state & 0xFF;
+                state >>= 8;
+            }
+        }
     }
 }
