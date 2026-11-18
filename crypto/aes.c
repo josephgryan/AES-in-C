@@ -5,7 +5,6 @@
 #include <sys/types.h>
 
 
-// setup verbose operations
 static const uint8_t mix_columns_matrix[4][4] = {
     {0x02, 0x03, 0x01, 0x01},
     {0x01, 0x02, 0x03, 0x01},
@@ -56,7 +55,7 @@ static uint8_t gmol(uint8_t a, uint8_t byte) {
             newbyte ^= a;
         }
         bool high_bit = (a & 0x80);
-        a = (a << 1);
+            a = (a << 1);
         if(high_bit) {
             a = 0x1B ^ a;
         }
@@ -67,60 +66,58 @@ static uint8_t gmol(uint8_t a, uint8_t byte) {
 static uint8_t sbox(uint8_t a) {
     return sbox_matrix[a >> 4][a & 0x0F];
 }
-void sub_bytes(block *blocks,int num_blocks) {
-    for(int i = 0; i < num_blocks; i++){
-        for(int r = 0; r < 4; r++) {
-            for(int c = 0; c < 4; c++) {
-                blocks[i].data[r][c] = sbox(blocks[i].data[r][c]);
-            }
-        }
-    }
-}
-void shift_rows(block *blocks, int num_blocks) {
-    for(int i = 0; i < num_blocks; i++) {
-        for(int r = 1; r < 4; r++) {
-            uint8_t temp[4];
-            for(int c = 0; c < 4; c++) {
-                temp[c] = blocks[i].data[r][(c + r) % 4];
-            }
-            for(int c = 0; c < 4; c++) {
-                blocks[i].data[r][c] = temp[c];
-            }
-        }
-    }
-}void mix_columns(block *blocks,int num_blocks) {
-    for(int i = 0; i < num_blocks; i++) {
+block sub_bytes(block block) {
+    for(int r = 0; r < 4; r++) {
         for(int c = 0; c < 4; c++) {
-            uint8_t tempcol[4];
-            for(int r = 0; r < 4; r++) {
-                tempcol[r] = gmol(mix_columns_matrix[r][0], blocks[i].data[0][c]) ^
-                             gmol(mix_columns_matrix[r][1], blocks[i].data[1][c]) ^
-                             gmol(mix_columns_matrix[r][2], blocks[i].data[2][c]) ^
-                             gmol(mix_columns_matrix[r][3], blocks[i].data[3][c]);
-            }            
-            for(int r = 0; r < 4; r++) {
-                blocks[i].data[r][c] = tempcol[r];
-            }
+            block.data[r][c] = sbox(block.data[r][c]);
         }
     }
+    return block;
+}
+block shift_rows(block block) {
+    for(int r = 1; r < 4; r++) {
+        uint8_t temp[4];
+        for(int c = 0; c < 4; c++) {
+            temp[c] = block.data[r][(c + r) % 4];
+        }
+        for(int c = 0; c < 4; c++) {
+            block.data[r][c] = temp[c];
+        }
+    }
+    return block;
+}
+block mix_columns(block block) {
+    for(int c = 0; c < 4; c++) {
+        uint8_t tempcol[4];
+        for(int r = 0; r < 4; r++) {
+            tempcol[r] = gmol(mix_columns_matrix[r][0], block.data[0][c]) ^
+                            gmol(mix_columns_matrix[r][1], block.data[1][c]) ^
+                            gmol(mix_columns_matrix[r][2], block.data[2][c]) ^
+                            gmol(mix_columns_matrix[r][3], block.data[3][c]);
+        }            
+        for(int r = 0; r < 4; r++) {
+            block.data[r][c] = tempcol[r];
+        }
+    }
+    return block;
 }
 
-void inverse_mix_columns(block *blocks,int num_blocks) {
-    for(int i = 0; i < num_blocks; i++) {
-        for(int c = 0; c < 4; c++) {
-            uint8_t tempcol[4];
-            for(int r = 0; r < 4; r++) {
-                tempcol[r] = gmol(inverse_mix_columns_matrix[r][0], blocks[i].data[0][c]) ^
-                             gmol(inverse_mix_columns_matrix[r][1], blocks[i].data[1][c]) ^
-                             gmol(inverse_mix_columns_matrix[r][2], blocks[i].data[2][c]) ^
-                             gmol(inverse_mix_columns_matrix[r][3], blocks[i].data[3][c]);
-            }
-            for(int r = 0; r < 4; r++){
-                blocks[i].data[r][c] = tempcol[r];
-            }
+block inverse_mix_columns(block block) {
+    for(int c = 0; c < 4; c++) {
+        uint8_t tempcol[4];
+        for(int r = 0; r < 4; r++) {
+            tempcol[r] =    gmol(inverse_mix_columns_matrix[r][0], block.data[0][c]) ^
+                            gmol(inverse_mix_columns_matrix[r][1], block.data[1][c]) ^
+                            gmol(inverse_mix_columns_matrix[r][2], block.data[2][c]) ^
+                            gmol(inverse_mix_columns_matrix[r][3], block.data[3][c]);
+        }
+        for(int r = 0; r < 4; r++){
+            block.data[r][c] = tempcol[r];
         }
     }
+    return block;
 }
+
 static uint32_t sub_word(uint32_t word) {
     uint8_t b0 = sbox((word >> 24) & 0xFF);
     uint8_t b1 = sbox((word >> 16) & 0xFF);
@@ -162,38 +159,64 @@ void key_expansion(block *keys) {
     }
     
 }
-void add_round_key(block *blocks, int num_blocks, block *keys, int round) {
-    for (int i = 0; i < num_blocks; i++) {
-        for (int c = 0; c < 4; c++) {
-            uint32_t state = 0, key = 0;
+block add_round_key(block *keys, block block, int round) {
+    for (int c = 0; c < 4; c++) {
+        uint32_t state = 0, key = 0;
 
-            for (int r = 0; r < 4; r++) {
-                state = (state << 8) | blocks[i].data[r][c];
-                key   = (key << 8)   | keys[round].data[r][c];
-            }
+        for (int r = 0; r < 4; r++) {
+            state = (state << 8) | block.data[r][c];
+            key   = (key << 8)   | keys[round].data[r][c];
+        }
 
-            state ^= key;
+        state ^= key;
 
-            for (int r = 3; r >= 0; r--) {
-                blocks[i].data[r][c] = state & 0xFF;
-                state >>= 8;
-            }
+        for (int r = 3; r >= 0; r--) {
+            block.data[r][c] = state & 0xFF;
+            state >>= 8;
         }
     }
+    return block;
 }
-void crypt_aes_128(block *blocks, int num_blocks, block key) {
+block crypt_aes_128(block *keys, block block) {
+    add_round_key(keys, block, 0);
+    for(int i = 1; i < 10; i++) {
+        block = sub_bytes(block);
+        shift_rows(block);
+        mix_columns(block);
+        add_round_key(keys, block, i);
+    }
+    
+    sub_bytes(block);
+    shift_rows(block);
+    add_round_key(keys, block, 10);
+    return block;
+}
+block xorblocks(block blocka, block blockb) {
+    block blockc;
+    for(int r = 0; r < 4; r++) {
+        for(int c = 0; c < 4; c++){
+            blockc.data[r][c] = blocka.data[r][c] ^ blockb.data[r][c];
+        }
+    }
+    return blockc;
+}
+block hmac_sha256();
+void crypt_aes_128_cbc_sha256_hmac(block key, block *blocks, int num_blocks, block iv) {
     block keys[11];
     keys[0] = key;
-
     key_expansion(keys);
-    add_round_key(blocks, num_blocks, keys, 0);
-    for(int i = 1; i < 10; i++) {
-        sub_bytes(blocks, num_blocks);
-        shift_rows(blocks, num_blocks);
-        mix_columns(blocks, num_blocks);
-        add_round_key(blocks, num_blocks, keys, i);
+    blocks[0] = crypt_aes_128(keys, xorblocks(blocks[0] , iv));
+    for(int i = 1; i < num_blocks; i++) {
+        blocks[i] = crypt_aes_128(keys, xorblocks(blocks[i-1], blocks[i]));
     }
-    sub_bytes(blocks, num_blocks);
-    shift_rows(blocks, num_blocks);
-    add_round_key(blocks, num_blocks, keys, 10);
+    void *tmpptr = realloc(blocks, (num_blocks+2)*sizeof(block));
+    if(tmpptr == NULL){
+        perror("realloc failed in crypt_aes_128_cbc_sha256_hmac, cant continue with normal function");
+        exit(1);
+    } else {
+        blocks = tmpptr;
+    }
+    memmove((uint8_t *)blocks + sizeof(block), blocks, num_blocks * sizeof(block));
+    blocks[0] = iv;
+    blocks[num_blocks+2] = 
 }

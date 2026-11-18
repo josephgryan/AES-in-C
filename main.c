@@ -1,5 +1,10 @@
 #include "main.h"
+<<<<<<< HEAD
 #include "/crypto/aes.h"
+=======
+#include "aes.h"
+#include <sys/random.h>
+>>>>>>> 07ef27aa58717d103b8f024ecc67dde7f0bf9951
 
 static void print_help() {
 	puts("help placeholder");
@@ -9,7 +14,7 @@ int main(int argc, char *argv[]) {
 	bool verbose = false;
 	bool user_key = false;
 	bool testing = false;
-	uint8_t	aes_key[16];
+	uint8_t	aes_keyl[16];
 	while((opt = getopt(argc, argv, "vtk:h")) != -1) {
 		switch (opt) {
 			case 'v':
@@ -27,7 +32,7 @@ int main(int argc, char *argv[]) {
 						return 0;
 					}
 
-					aes_key[i] = temp_val;
+					aes_keyl[i] = temp_val;
 					ptr += chars_read;
 				}
 				break;
@@ -36,37 +41,7 @@ int main(int argc, char *argv[]) {
 				return 1;
 			case 't':
 				testing = true;
-				block test_key = { .data={
-					{0x2b, 0x28, 0xab, 0x09},
-					{0x7e, 0xae, 0xf7, 0xcf},
-					{0x15, 0xd2, 0x15, 0x4f},
-					{0x16, 0xa6, 0x88, 0x3c}
-				}};
 
-				// AES-128 Plaintext: 6bc1bee22e409f96e93d7e117393172a
-				block test_plaintext[1] = {{ .data={
-					{0x6b, 0x2e, 0xe9, 0x73}, // Row 0
-					{0xc1, 0x40, 0x3d, 0x93}, // Row 1
-					{0xbe, 0x9f, 0x7e, 0x17}, // Row 2
-					{0xe2, 0x96, 0x11, 0x2a}  // Row 3
-				}}};
-				printf("\n--- Block %d ---\n", 0);
-				for (int r = 0; r < 4; r++) {
-					for (int c = 0; c < 4; c++) {
-						// Print each byte as a 2-digit uppercase hex value
-						printf("%02X ", (unsigned char)test_plaintext[0].data[r][c]);
-					}
-					printf("\n");
-				}
-				crypt_aes_128(test_plaintext, 1, test_key);
-				printf("\n--- Block %d ---\n", 0);
-				for (int r = 0; r < 4; r++) {
-					for (int c = 0; c < 4; c++) {
-						// Print each byte as a 2-digit uppercase hex value
-						printf("%02X ", (unsigned char)test_plaintext[0].data[r][c]);
-					}
-					printf("\n");
-				}
 				return 0;
 			default:
 				print_help();
@@ -79,14 +54,14 @@ int main(int argc, char *argv[]) {
 	// add file support
 	//generates an AES key from kernel entropy pool if no key is supplyed
 	if (user_key == false) {
-		if (getentropy(aes_key, sizeof(aes_key)) != 0) {
+		if (getentropy(aes_keyl, sizeof(aes_keyl)) != 0) {
 			perror("getentropy failed");
 			return 1;
 		}
 		if(verbose==true) {
 			printf("AES key: ");
 			for(int i = 0; i < 16; i++) {
-				printf("%02X ", aes_key[i]);
+				printf("%02X ", aes_keyl[i]);
 			}
 			fflush(stdout);
 			putchar('\n');
@@ -97,7 +72,7 @@ int main(int argc, char *argv[]) {
 	    printf("\n--- AES KEY ---\n");
         for (int r = 0; r < 4; r++) {
             for (int c = 0; c < 4; c++) {
-                printf("%02X ", aes_key[4*r + c]);
+                printf("%02X ", aes_keyl[4*r + c]);
             }
             printf("\n");
         }
@@ -175,6 +150,17 @@ int main(int argc, char *argv[]) {
             printf("\n");
         }
     }
+block aes_key;
+for(int c = 0; c < 4; c++) {
+	for(int r = 0; r < 4; r++) {
+		aes_key.data[c][r] = aes_keyl[(c*4)+r];
+	}
+}
+
+block iv;
+getentropy(iv.data, sizeof(block));
+crypt_aes_128_cbc_sha256_hmac(aes_key, blocks, num_blocks, iv);
+
 fflush(stdout);
 free(blocks);
 free(text);
