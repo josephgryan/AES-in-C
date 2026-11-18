@@ -76,20 +76,19 @@ void sub_bytes(block *blocks,int num_blocks) {
         }
     }
 }
-void shift_rows(block *blocks,int num_blocks) {
+void shift_rows(block *blocks, int num_blocks) {
     for(int i = 0; i < num_blocks; i++) {
-        for(int r = 0; r < 4; r++) {
+        for(int r = 1; r < 4; r++) {
             uint8_t temp[4];
             for(int c = 0; c < 4; c++) {
-                temp[c] = blocks[i].data[r][(c+r)%4];
+                temp[c] = blocks[i].data[r][(c + r) % 4];
             }
             for(int c = 0; c < 4; c++) {
                 blocks[i].data[r][c] = temp[c];
             }
         }
     }
-}
-void mix_columns(block *blocks,int num_blocks) {
+}void mix_columns(block *blocks,int num_blocks) {
     for(int i = 0; i < num_blocks; i++) {
         for(int c = 0; c < 4; c++) {
             uint8_t tempcol[4];
@@ -123,23 +122,27 @@ void inverse_mix_columns(block *blocks,int num_blocks) {
     }
 }
 static uint32_t sub_word(uint32_t word) {
-    uint8_t newword[4];
-    memcpy(newword, &word, sizeof(uint32_t));
-    for(int i = 0; i < 4; i++) {
-        newword[i]=sbox(newword[i]);
-    }
-    memcpy(&word, newword, sizeof(uint32_t));
-    return(word);
+    uint8_t b0 = sbox((word >> 24) & 0xFF);
+    uint8_t b1 = sbox((word >> 16) & 0xFF);
+    uint8_t b2 = sbox((word >> 8)  & 0xFF);
+    uint8_t b3 = sbox((word >> 0)  & 0xFF);
+    
+    return ((uint32_t)b0 << 24) | 
+           ((uint32_t)b1 << 16) | 
+           ((uint32_t)b2 << 8)  | 
+            (uint32_t)b3;
 }
 static uint32_t rot_word(uint32_t word) {
     return((word << 8) | (word >> 24));
 }
 
-void key_expansion(uint8_t key[], block *keys) {
+void key_expansion(block *keys) {
     uint32_t words[44];
-    memcpy(words, key, sizeof(block));
-    for(int i = 0; i < 4; i++){
-        words[i] = __builtin_bswap32(words[i]);
+    for (int c = 0; c < 4; c++) {
+        words[c] = ((uint32_t)keys[0].data[0][c] << 24) |
+                   ((uint32_t)keys[0].data[1][c] << 16) |
+                   ((uint32_t)keys[0].data[2][c] << 8)  |
+                   ((uint32_t)keys[0].data[3][c]);
     }
     for(int i = 4; i < 44; i++) {
         uint32_t temp = words[i-1];
@@ -148,12 +151,16 @@ void key_expansion(uint8_t key[], block *keys) {
         }
         words[i]=words[i-4]^temp;
     }
-    if (!detect_endianness()) {
-        for(int i = 0; i < 44; i++){
-            words[i] = __builtin_bswap32(words[i]);
+    for (int round = 0; round < 11; round++) {
+        for (int c = 0; c < 4; c++) {
+            uint32_t w = words[round * 4 + c];
+            keys[round].data[0][c] = (w >> 24) & 0xFF;
+            keys[round].data[1][c] = (w >> 16) & 0xFF;
+            keys[round].data[2][c] = (w >> 8)  & 0xFF;
+            keys[round].data[3][c] = (w >> 0)  & 0xFF;
         }
     }
-    memcpy(keys, words, sizeof(block)*11);
+    
 }
 void add_round_key(block *blocks, int num_blocks, block *keys, int round) {
     for (int i = 0; i < num_blocks; i++) {
@@ -173,4 +180,20 @@ void add_round_key(block *blocks, int num_blocks, block *keys, int round) {
             }
         }
     }
+}
+void crypt_aes_128(block *blocks, int num_blocks, block key) {
+    block keys[11];
+    keys[0] = key;
+
+    key_expansion(keys);
+    add_round_key(blocks, num_blocks, keys, 0);
+    for(int i = 1; i < 10; i++) {
+        sub_bytes(blocks, num_blocks);
+        shift_rows(blocks, num_blocks);
+        mix_columns(blocks, num_blocks);
+        add_round_key(blocks, num_blocks, keys, i);
+    }
+    sub_bytes(blocks, num_blocks);
+    shift_rows(blocks, num_blocks);
+    add_round_key(blocks, num_blocks, keys, 10);
 }

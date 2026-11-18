@@ -4,12 +4,6 @@
 static void print_help() {
 	puts("help placeholder");
 }
-bool detect_endianness() {
-	uint8_t bytes[4] = {0x01, 0x02, 0x03, 0x04};
-    uint32_t value;
-    memcpy(&value, bytes, sizeof value);
-    return (value == 0x01020304);
-}
 int main(int argc, char *argv[]) {
 	int opt;
 	bool verbose = false;
@@ -42,13 +36,36 @@ int main(int argc, char *argv[]) {
 				return 1;
 			case 't':
 				testing = true;
-				uint32_t test32 = 0x11223344;
-				printf("%02X", test32);
-				putchar('\n');
-				uint8_t test8[4];
-				memcpy(test8, &test32, sizeof(uint32_t));
-				for(int i = 0; i < 4; i++){
-					printf("%02X", test8[i]);
+				block test_key = { .data={
+					{0x2b, 0x28, 0xab, 0x09},
+					{0x7e, 0xae, 0xf7, 0xcf},
+					{0x15, 0xd2, 0x15, 0x4f},
+					{0x16, 0xa6, 0x88, 0x3c}
+				}};
+
+				// AES-128 Plaintext: 6bc1bee22e409f96e93d7e117393172a
+				block test_plaintext[1] = {{ .data={
+					{0x6b, 0x2e, 0xe9, 0x73}, // Row 0
+					{0xc1, 0x40, 0x3d, 0x93}, // Row 1
+					{0xbe, 0x9f, 0x7e, 0x17}, // Row 2
+					{0xe2, 0x96, 0x11, 0x2a}  // Row 3
+				}}};
+				printf("\n--- Block %d ---\n", 0);
+				for (int r = 0; r < 4; r++) {
+					for (int c = 0; c < 4; c++) {
+						// Print each byte as a 2-digit uppercase hex value
+						printf("%02X ", (unsigned char)test_plaintext[0].data[r][c]);
+					}
+					printf("\n");
+				}
+				crypt_aes_128(test_plaintext, 1, test_key);
+				printf("\n--- Block %d ---\n", 0);
+				for (int r = 0; r < 4; r++) {
+					for (int c = 0; c < 4; c++) {
+						// Print each byte as a 2-digit uppercase hex value
+						printf("%02X ", (unsigned char)test_plaintext[0].data[r][c]);
+					}
+					printf("\n");
 				}
 				return 0;
 			default:
