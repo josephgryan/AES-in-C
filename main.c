@@ -1,5 +1,5 @@
 #include "main.h"
-#include "aes.h"
+#include "/crypto/aes.h"
 
 static void print_help() {
 	puts("help placeholder");
