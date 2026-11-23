@@ -1,4 +1,4 @@
-#include "main.h"
+#include "../main.h"
 #include <endian.h>
 #include <stdint.h>
 #include <stdio.h>
