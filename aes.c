@@ -3,8 +3,11 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <sys/types.h>
-
-
+// remove after implimenting sha-256
+#include <openssl/evp.h>
+#include <openssl/params.h>
+#include <stddef.h>
+#include <stdint.h>
 static const uint8_t mix_columns_matrix[4][4] = {
     {0x02, 0x03, 0x01, 0x01},
     {0x01, 0x02, 0x03, 0x01},
@@ -200,8 +203,17 @@ block xorblocks(block blocka, block blockb) {
     }
     return blockc;
 }
-block hmac_sha256();
-void crypt_aes_128_cbc_sha256_hmac(block key, block *blocks, int num_blocks, block iv) {
+block hmac_sha256(block *blocks,int num_blocks, uint8_t *hmac_key) {
+    block *tempblocks = malloc(sizeof(block)*(num_blocks+1));
+    memcpy(tempblocks, blocks,(num_blocks+1)*sizeof(block));
+    uint8_t sha256hash[32] = {0};
+    size_t out_len = 0;
+    EVP_Q_digest(NULL, "SHA256", NULL, tempblocks, (1+num_blocks)*sizeof(block), sha256hash, &out_len) && out_len == 32;
+    block hash;
+    free(tempblocks);
+    return hash;
+}
+void crypt_aes_128_cbc_sha256_hmac(block key, block *blocks, int num_blocks, block iv, uint8_t *hmac_user_key) {
     block keys[11];
     keys[0] = key;
     key_expansion(keys);
@@ -218,5 +230,5 @@ void crypt_aes_128_cbc_sha256_hmac(block key, block *blocks, int num_blocks, blo
     }
     memmove((uint8_t *)blocks + sizeof(block), blocks, num_blocks * sizeof(block));
     blocks[0] = iv;
-    blocks[num_blocks+2] = 
-}
+    blocks[num_blocks+2] = hmac_sha256(blocks, num_blocks,hmac_user_key);
+}   

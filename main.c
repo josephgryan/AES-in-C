@@ -8,30 +8,62 @@ static void print_help() {
 int main(int argc, char *argv[]) {
 	int opt;
 	bool verbose = false;
+	bool user_iv = false;
+	bool user_hmac_key = false;
 	bool user_key = false;
 	bool testing = false;
 	uint8_t	aes_keyl[16];
-	while((opt = getopt(argc, argv, "vtk:h")) != -1) {
+	while((opt = getopt(argc, argv, "vtk:i:m:h")) != -1) {
 		switch (opt) {
 			case 'v':
 				verbose = true;
 				break;
 			case 'k':
 				user_key = true;
-				char *ptr = optarg;
+				char *ptrk = optarg;
 				for (int i = 0; i < 16; i++) {
 					uint8_t temp_val;
 					int chars_read = 0;
 
-					if (sscanf(ptr, "%hhx%n", &temp_val, &chars_read) != 1) {
+					if (sscanf(ptrk, "%hhx%n", &temp_val, &chars_read) != 1) {
 						fprintf(stderr, "Error: -k requires 16 valid hex bytes.\n");
 						return 0;
 					}
 
 					aes_keyl[i] = temp_val;
-					ptr += chars_read;
+					ptrk += chars_read;
 				}
 				break;
+			case 'i':
+				user_iv = true;
+				char *ptri = optarg;
+				for (int i = 0; i < 16; i++) {
+					uint8_t temp_val;
+					int chars_read = 0;
+
+					if (sscanf(ptri, "%hhx%n", &temp_val, &chars_read) != 1) {
+						fprintf(stderr, "Error: -i requires 16 valid hex bytes.\n");
+						return 0;
+					}
+
+					aes_keyl[i] = temp_val;
+					ptri += chars_read;
+				}
+			case 'm':
+				user_hmac_key = true;
+				char *ptrm = optarg;
+				for (int i = 0; i < 16; i++) {
+					uint8_t temp_val;
+					int chars_read = 0;
+
+					if (sscanf(ptrm, "%hhx%n", &temp_val, &chars_read) != 1) {
+						fprintf(stderr, "Error: -m requires 64 valid hex bytes.\n");
+						return 0;
+					}
+
+					aes_keyl[i] = temp_val;
+					ptrm += chars_read;
+				}
 			case 'h':
 				print_help();
 				return 1;
