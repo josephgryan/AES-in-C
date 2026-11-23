@@ -1,6 +1,10 @@
 #include "main.h"
+<<<<<<< HEAD
+#include "/crypto/aes.h"
+=======
 #include "aes.h"
 #include <sys/random.h>
+>>>>>>> 07ef27aa58717d103b8f024ecc67dde7f0bf9951
 
 static void print_help() {
 	puts("help placeholder");
